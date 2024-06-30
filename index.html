@@ -22,6 +22,22 @@
             padding: 2rem;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            display: flex;
+        }
+        .timer-container {
+            width: 30px;
+            height: 300px;
+            background-color: #ddd;
+            margin-right: 20px;
+            position: relative;
+        }
+        #timerBar {
+            width: 100%;
+            height: 100%;
+            background-color: #4CAF50;
+            position: absolute;
+            bottom: 0;
+            transition: height 0.1s linear, background-color 0.1s linear;
         }
         .problem {
             font-size: 2rem;
@@ -38,11 +54,11 @@
             width: 150px;
             margin-bottom: 1rem;
         }
-        #cpm, #timer {
+        #cpm, #timer, #score {
             margin-top: 1rem;
             font-size: 1.5rem;
         }
-        #operationSelector, #timerInput, #digitSelector {
+        select, input {
             font-size: 1.2rem;
             margin-bottom: 1rem;
         }
@@ -50,40 +66,57 @@
 </head>
 <body>
     <div class="container">
-        <select id="operationSelector">
-            <option value="both">Addition and Multiplication</option>
-            <option value="addition">Addition Only</option>
-            <option value="multiplication">Multiplication Only</option>
-        </select>
-        <br>
-        <select id="digitSelector">
-            <option value="1">1 Digit</option>
-            <option value="2">2 Digits</option>
-            <option value="3">3 Digits</option>
-        </select>
-        <br>
-        <input type="number" id="timerInput" placeholder="Timer (seconds)" min="1">
-        <div id="timer">Time: 0s</div>
-        <div id="nextProblem2" class="problem"></div>
-        <div id="nextProblem1" class="problem"></div>
-        <div id="currentProblem" class="problem"></div>
-        <input type="number" id="answer" autofocus>
-        <div id="cpm">CPM: 0</div>
+        <div class="timer-container" style="display:none;">
+            <div id="timerBar"></div>
+        </div>
+        <div class="content">
+            <select id="modeSelector">
+                <option value="practice">Practice Mode</option>
+                <option value="timed">Timed Mode</option>
+            </select>
+            <br>
+            <select id="operationSelector">
+                <option value="both">Addition and Multiplication</option>
+                <option value="addition">Addition Only</option>
+                <option value="multiplication">Multiplication Only</option>
+            </select>
+            <br>
+            <select id="digitSelector">
+                <option value="1">1 Digit</option>
+                <option value="2">2 Digits</option>
+                <option value="3">3 Digits</option>
+            </select>
+            <br>
+            <input type="number" id="timerInput" placeholder="Timer (seconds)" min="1">
+            <input type="number" id="msPerQuestionInput" placeholder="Ms per question" min="100" style="display:none;">
+            <div id="timer">Time: 0s</div>
+            <div id="score" style="display:none;">Score: 0</div>
+            <div id="nextProblem2" class="problem"></div>
+            <div id="nextProblem1" class="problem"></div>
+            <div id="currentProblem" class="problem"></div>
+            <input type="number" id="answer" autofocus>
+            <div id="cpm">CPM: 0</div>
+        </div>
     </div>
 
     <audio id="correctSound" src="https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3"></audio>
 
     <script>
+        const modeSelector = document.getElementById('modeSelector');
         const currentProblemEl = document.getElementById('currentProblem');
         const nextProblem1El = document.getElementById('nextProblem1');
         const nextProblem2El = document.getElementById('nextProblem2');
         const answerEl = document.getElementById('answer');
         const cpmEl = document.getElementById('cpm');
+        const scoreEl = document.getElementById('score');
         const correctSound = document.getElementById('correctSound');
         const operationSelector = document.getElementById('operationSelector');
         const digitSelector = document.getElementById('digitSelector');
         const timerInput = document.getElementById('timerInput');
+        const msPerQuestionInput = document.getElementById('msPerQuestionInput');
         const timerEl = document.getElementById('timer');
+        const timerBar = document.getElementById('timerBar');
+        const timerContainer = document.querySelector('.timer-container');
 
         let correctAnswers = 0;
         let startTime;
@@ -91,6 +124,8 @@
         let isTimerRunning = false;
         let timeLeft;
         let problems = [];
+        let questionTimer;
+        let barUpdateInterval;
 
         function generateNumber(digits) {
             const min = Math.pow(10, digits - 1);
@@ -140,16 +175,73 @@
 
         generateProblems();
 
+        function startQuestionTimer() {
+            if (modeSelector.value === 'timed') {
+                clearTimeout(questionTimer);
+                clearInterval(barUpdateInterval);
+                const msPerQuestion = parseInt(msPerQuestionInput.value);
+                let timeLeft = msPerQuestion;
+                
+                timerBar.style.height = '100%';
+                timerBar.style.backgroundColor = '#4CAF50';
+                
+                questionTimer = setTimeout(() => {
+                    endGame();
+                }, msPerQuestion);
+
+                barUpdateInterval = setInterval(() => {
+                    timeLeft -= 50;
+                    const percentLeft = (timeLeft / msPerQuestion) * 100;
+                    timerBar.style.height = `${percentLeft}%`;
+                    
+                    // Gradual color change from green to red
+                    const hue = (percentLeft / 100) * 120; // 120 is green, 0 is red in HSL
+                    timerBar.style.backgroundColor = `hsl(${hue}, 100%, 50%)`;
+                    
+                    if (timeLeft <= 0) {
+                        clearInterval(barUpdateInterval);
+                    }
+                }, 50);
+            }
+        }
+
+        function endGame() {
+            clearTimeout(questionTimer);
+            clearInterval(barUpdateInterval);
+            alert(`Game Over! Your score: ${correctAnswers}`);
+            resetGame();
+        }
+
+        function resetGame() {
+            correctAnswers = 0;
+            scoreEl.textContent = `Score: ${correctAnswers}`;
+            generateProblems();
+            answerEl.value = '';
+            isTimerRunning = false;
+            timerBar.style.height = '100%';
+            timerBar.style.backgroundColor = '#4CAF50';
+        }
+
         answerEl.addEventListener('input', function() {
             if (!isTimerRunning) {
-                startTimer(parseInt(timerInput.value));
+                if (modeSelector.value === 'practice') {
+                    startTimer(parseInt(timerInput.value));
+                } else {
+                    isTimerRunning = true;
+                    startQuestionTimer();
+                }
             }
             const userAnswer = parseInt(answerEl.value);
             if (userAnswer === problems[0].answer) {
                 correctSound.currentTime = 0;
                 correctSound.play();
                 correctAnswers++;
-                updateCPM();
+                if (modeSelector.value === 'practice') {
+                    updateCPM();
+                } else {
+                    scoreEl.textContent = `Score: ${correctAnswers}`;
+                    startQuestionTimer();
+                }
                 answerEl.value = '';
                 shiftProblems();
             }
@@ -157,6 +249,25 @@
 
         operationSelector.addEventListener('change', generateProblems);
         digitSelector.addEventListener('change', generateProblems);
+
+        modeSelector.addEventListener('change', function() {
+            if (this.value === 'practice') {
+                timerInput.style.display = 'inline-block';
+                msPerQuestionInput.style.display = 'none';
+                scoreEl.style.display = 'none';
+                cpmEl.style.display = 'block';
+                timerEl.style.display = 'block';
+                timerContainer.style.display = 'none';
+            } else {
+                timerInput.style.display = 'none';
+                msPerQuestionInput.style.display = 'inline-block';
+                scoreEl.style.display = 'block';
+                cpmEl.style.display = 'none';
+                timerEl.style.display = 'none';
+                timerContainer.style.display = 'block';
+            }
+            resetGame();
+        });
 
         function updateCPM() {
             const currentTime = Date.now();
