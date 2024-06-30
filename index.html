@@ -12,30 +12,38 @@
             align-items: center;
             height: 100vh;
             margin: 0;
-            background-color: #f0f0f0;
+            background-image: url('https://i.redd.it/h3qww4vmh3191.jpg');
+            background-size: cover;
+            background-position: center;
         }
         .container {
             text-align: center;
-            background-color: white;
+            background-color: rgba(255, 255, 255, 0.8);
             padding: 2rem;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
         }
-        #problem {
+        .problem {
             font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        #currentProblem {
+            font-size: 3rem;
+            font-weight: bold;
             margin-bottom: 1rem;
         }
         #answer {
-            font-size: 1.5rem;
+            font-size: 2rem;
             padding: 0.5rem;
-            width: 100px;
+            width: 150px;
             margin-bottom: 1rem;
         }
-        #cpm {
+        #cpm, #timer {
             margin-top: 1rem;
-            font-size: 1.2rem;
+            font-size: 1.5rem;
         }
-        #operationSelector {
+        #operationSelector, #timerInput, #digitSelector {
+            font-size: 1.2rem;
             margin-bottom: 1rem;
         }
     </style>
@@ -47,22 +55,48 @@
             <option value="addition">Addition Only</option>
             <option value="multiplication">Multiplication Only</option>
         </select>
-        <div id="problem"></div>
+        <br>
+        <select id="digitSelector">
+            <option value="1">1 Digit</option>
+            <option value="2">2 Digits</option>
+            <option value="3">3 Digits</option>
+        </select>
+        <br>
+        <input type="number" id="timerInput" placeholder="Timer (seconds)" min="1">
+        <div id="timer">Time: 0s</div>
+        <div id="nextProblem2" class="problem"></div>
+        <div id="nextProblem1" class="problem"></div>
+        <div id="currentProblem" class="problem"></div>
         <input type="number" id="answer" autofocus>
         <div id="cpm">CPM: 0</div>
     </div>
 
-    <audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-click-on.mp3"></audio>
+    <audio id="correctSound" src="https://assets.mixkit.co/active_storage/sfx/1114/1114-preview.mp3"></audio>
 
     <script>
-        const problemEl = document.getElementById('problem');
+        const currentProblemEl = document.getElementById('currentProblem');
+        const nextProblem1El = document.getElementById('nextProblem1');
+        const nextProblem2El = document.getElementById('nextProblem2');
         const answerEl = document.getElementById('answer');
         const cpmEl = document.getElementById('cpm');
-        const clickSound = document.getElementById('clickSound');
+        const correctSound = document.getElementById('correctSound');
         const operationSelector = document.getElementById('operationSelector');
+        const digitSelector = document.getElementById('digitSelector');
+        const timerInput = document.getElementById('timerInput');
+        const timerEl = document.getElementById('timer');
 
         let correctAnswers = 0;
-        let startTime = Date.now();
+        let startTime;
+        let timerInterval;
+        let isTimerRunning = false;
+        let timeLeft;
+        let problems = [];
+
+        function generateNumber(digits) {
+            const min = Math.pow(10, digits - 1);
+            const max = Math.pow(10, digits) - 1;
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
 
         function generateProblem() {
             let operations;
@@ -77,29 +111,52 @@
                     operations = ['+', '*'];
             }
             const operation = operations[Math.floor(Math.random() * operations.length)];
-            const num1 = Math.floor(Math.random() * 10) + 1;
-            const num2 = Math.floor(Math.random() * 10) + 1;
+            const digits = parseInt(digitSelector.value);
+            const num1 = generateNumber(digits);
+            const num2 = generateNumber(digits);
             const problem = `${num1} ${operation} ${num2}`;
-            problemEl.textContent = problem;
-            return eval(problem);
+            return {
+                problem: problem,
+                answer: eval(problem)
+            };
         }
 
-        let correctAnswer = generateProblem();
+        function generateProblems() {
+            problems = [generateProblem(), generateProblem(), generateProblem()];
+            updateProblemDisplay();
+        }
+
+        function updateProblemDisplay() {
+            currentProblemEl.textContent = problems[0].problem;
+            nextProblem1El.textContent = problems[1].problem;
+            nextProblem2El.textContent = problems[2].problem;
+        }
+
+        function shiftProblems() {
+            problems.shift();
+            problems.push(generateProblem());
+            updateProblemDisplay();
+        }
+
+        generateProblems();
 
         answerEl.addEventListener('input', function() {
+            if (!isTimerRunning) {
+                startTimer(parseInt(timerInput.value));
+            }
             const userAnswer = parseInt(answerEl.value);
-            if (userAnswer === correctAnswer) {
-                clickSound.play();
+            if (userAnswer === problems[0].answer) {
+                correctSound.currentTime = 0;
+                correctSound.play();
                 correctAnswers++;
                 updateCPM();
                 answerEl.value = '';
-                correctAnswer = generateProblem();
+                shiftProblems();
             }
         });
 
-        operationSelector.addEventListener('change', function() {
-            correctAnswer = generateProblem();
-        });
+        operationSelector.addEventListener('change', generateProblems);
+        digitSelector.addEventListener('change', generateProblems);
 
         function updateCPM() {
             const currentTime = Date.now();
@@ -108,7 +165,32 @@
             cpmEl.textContent = `CPM: ${cpm}`;
         }
 
-        setInterval(updateCPM, 5000); // Update CPM every 5 seconds
+        function startTimer(duration) {
+            isTimerRunning = true;
+            correctAnswers = 0;
+            startTime = Date.now();
+            timeLeft = duration;
+            updateTimerDisplay();
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                if (timeLeft <= 0) {
+                    endTimer();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            timerEl.textContent = `Time: ${timeLeft}s`;
+        }
+
+        function endTimer() {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            updateCPM();
+            alert(`Time's up! Your final CPM: ${cpmEl.textContent}`);
+        }
     </script>
 </body>
 </html>
