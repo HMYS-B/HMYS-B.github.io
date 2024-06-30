@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Practice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #problem {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+        #answer {
+            font-size: 1.5rem;
+            padding: 0.5rem;
+            width: 100px;
+            margin-bottom: 1rem;
+        }
+        #cpm {
+            margin-top: 1rem;
+            font-size: 1.2rem;
+        }
+        #operationSelector {
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <select id="operationSelector">
+            <option value="both">Addition and Multiplication</option>
+            <option value="addition">Addition Only</option>
+            <option value="multiplication">Multiplication Only</option>
+        </select>
+        <div id="problem"></div>
+        <input type="number" id="answer" autofocus>
+        <div id="cpm">CPM: 0</div>
+    </div>
+
+    <audio id="clickSound" src="https://www.soundjay.com/buttons/sounds/button-click-on.mp3"></audio>
+
+    <script>
+        const problemEl = document.getElementById('problem');
+        const answerEl = document.getElementById('answer');
+        const cpmEl = document.getElementById('cpm');
+        const clickSound = document.getElementById('clickSound');
+        const operationSelector = document.getElementById('operationSelector');
+
+        let correctAnswers = 0;
+        let startTime = Date.now();
+
+        function generateProblem() {
+            let operations;
+            switch (operationSelector.value) {
+                case 'addition':
+                    operations = ['+'];
+                    break;
+                case 'multiplication':
+                    operations = ['*'];
+                    break;
+                default:
+                    operations = ['+', '*'];
+            }
+            const operation = operations[Math.floor(Math.random() * operations.length)];
+            const num1 = Math.floor(Math.random() * 10) + 1;
+            const num2 = Math.floor(Math.random() * 10) + 1;
+            const problem = `${num1} ${operation} ${num2}`;
+            problemEl.textContent = problem;
+            return eval(problem);
+        }
+
+        let correctAnswer = generateProblem();
+
+        answerEl.addEventListener('input', function() {
+            const userAnswer = parseInt(answerEl.value);
+            if (userAnswer === correctAnswer) {
+                clickSound.play();
+                correctAnswers++;
+                updateCPM();
+                answerEl.value = '';
+                correctAnswer = generateProblem();
+            }
+        });
+
+        operationSelector.addEventListener('change', function() {
+            correctAnswer = generateProblem();
+        });
+
+        function updateCPM() {
+            const currentTime = Date.now();
+            const elapsedMinutes = (currentTime - startTime) / 60000;
+            const cpm = Math.round((correctAnswers / elapsedMinutes) * 100) / 100;
+            cpmEl.textContent = `CPM: ${cpm}`;
+        }
+
+        setInterval(updateCPM, 5000); // Update CPM every 5 seconds
+    </script>
+</body>
+</html>
