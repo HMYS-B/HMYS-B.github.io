@@ -129,7 +129,37 @@
         let interval, totalProblems, problemsSolved, activeProblems, gameInterval;
         let aMin, aMax, bMin, bMax;
 
+        // Load saved settings
+        loadSettings();
+
         startBtn.addEventListener('click', startCountdown);
+
+        // Save settings when they change
+        document.querySelectorAll('#settings-container input').forEach(input => {
+            input.addEventListener('change', saveSettings);
+        });
+
+        function loadSettings() {
+            const savedSettings = JSON.parse(localStorage.getItem('gameSettings')) || {};
+            document.getElementById('interval').value = savedSettings.interval || 5000;
+            document.getElementById('total-problems').value = savedSettings.totalProblems || 10;
+            document.getElementById('a-min').value = savedSettings.aMin || 2;
+            document.getElementById('a-max').value = savedSettings.aMax || 6;
+            document.getElementById('b-min').value = savedSettings.bMin || 10;
+            document.getElementById('b-max').value = savedSettings.bMax || 22;
+        }
+
+        function saveSettings() {
+            const settings = {
+                interval: document.getElementById('interval').value,
+                totalProblems: document.getElementById('total-problems').value,
+                aMin: document.getElementById('a-min').value,
+                aMax: document.getElementById('a-max').value,
+                bMin: document.getElementById('b-min').value,
+                bMax: document.getElementById('b-max').value
+            };
+            localStorage.setItem('gameSettings', JSON.stringify(settings));
+        }
 
         function startCountdown() {
             let count = 3;
