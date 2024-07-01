@@ -79,6 +79,11 @@
             font-size: 48px;
             font-weight: bold;
         }
+        #questions-left {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -114,6 +119,7 @@
         <div id="game-container">
             <h1>Addition Practice Game</h1>
             <div id="countdown"></div>
+            <div id="questions-left"></div>
             <div id="problems-container"></div>
             <div id="result"></div>
         </div>
@@ -125,6 +131,7 @@
         const resultDiv = document.getElementById('result');
         const correctSound = document.getElementById('correct-sound');
         const countdownDiv = document.getElementById('countdown');
+        const questionsLeftDiv = document.getElementById('questions-left');
 
         let interval, totalProblems, problemsSolved, activeProblems, gameInterval;
         let aMin, aMax, bMin, bMax;
@@ -191,6 +198,7 @@
             activeProblems = 0;
             problemsContainer.innerHTML = '';
             resultDiv.textContent = '';
+            updateQuestionsLeft();
 
             gameInterval = setInterval(addProblem, interval);
             addProblem(); // Add the first problem immediately
@@ -233,6 +241,7 @@
                 problemsSolved++;
                 activeProblems--;
                 problemDiv.remove();
+                updateQuestionsLeft();
                 if (problemsSolved >= totalProblems) {
                     endGame();
                 } else {
@@ -250,6 +259,11 @@
             correctSound.play();
         }
 
+        function updateQuestionsLeft() {
+            const questionsLeft = totalProblems - problemsSolved;
+            questionsLeftDiv.textContent = `Questions left: ${questionsLeft}`;
+        }
+
         function endGame() {
             clearInterval(gameInterval);
             if (problemsSolved >= totalProblems) {
@@ -259,6 +273,7 @@
                 resultDiv.textContent = 'You lose!';
                 resultDiv.style.color = 'red';
             }
+            questionsLeftDiv.textContent = '';
         }
     </script>
 </body>
