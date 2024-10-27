@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<!-- saved from url=(0025)https://hmys-b.github.io/ -->
-<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multiplication Practice Game</title>
@@ -10,26 +11,61 @@
             margin: 0;
             padding: 0;
             height: 100vh;
-            background-image: url('https://i.redd.it/h3qww4vmh3191.jpg');
+            background-image: url('https://image.cdn2.seaart.ai/2023-06-26/38574996111429/31bec33deb8d7d108d47827267322f615c534609_high.webp'); /* Swapped: Anime Background as Default */
             background-size: cover;
             background-position: center;
             display: flex;
             justify-content: center;
             align-items: center;
+            transition: background-image 0.5s ease, background-color 0.5s ease;
         }
         .container {
             display: flex;
             width: 100%;
             height: 100%;
+            position: relative;
         }
         #settings-container {
             position: absolute;
             top: 20px;
             left: 20px;
-            background-color: rgba(255, 255, 255, 0.7);
-            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.85); /* Reduced opacity for less white space */
+            padding: 18px; /* Reduced padding by ~5% */
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 300px;
+            transition: max-height 0.3s ease, padding 0.3s ease;
+            overflow: hidden;
+        }
+        /* Minimization styles */
+        #settings-container.minimized {
+            max-height: 40px;
+            padding: 10px;
+        }
+        #settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        #settings-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+        #minimize-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        #settings-content {
+            margin-top: 10px;
+            display: block;
+            transition: display 0.3s ease;
+        }
+        /* Hide content when minimized */
+        #settings-container.minimized #settings-content {
+            display: none;
         }
         #game-container {
             text-align: center;
@@ -40,12 +76,12 @@
             margin: auto;
             display: flex;
             flex-direction: column;
-            height: 60vh;
+            height: 50vh; /* Reduced height from 60vh to 50vh */
             width: 300px;
             justify-content: space-between;
         }
         #problems-container {
-            height: 70%;
+            height: 60%; /* Adjusted to accommodate the reduced game-container height */
             overflow-y: auto;
             display: flex;
             flex-direction: column;
@@ -61,6 +97,14 @@
             border-bottom: 2px solid #333;
             background-color: transparent;
             text-align: center;
+            /* Remove number input arrows */
+            -moz-appearance: textfield;
+        }
+        /* Remove spinner arrows for WebKit browsers */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
         button {
             background-color: #4CAF50;
@@ -78,57 +122,110 @@
         #countdown {
             font-size: 48px;
             font-weight: bold;
+            margin-top: 20px; /* Moved slightly down */
         }
         #questions-left {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 10px;
         }
+        /* Style for the background selector in top right */
+        #background-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: transparent; /* Made transparent */
+            padding: 10px 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        #background-container label, 
+        #background-container select {
+            display: block;
+            margin-top: 10px;
+            font-size: 16px;
+            background-color: transparent; /* Made dropdown transparent */
+            border: 1px solid #ccc; /* Added border for visibility */
+            padding: 5px;
+            border-radius: 5px;
+            color: #333;
+        }
+        /* Responsive adjustments */
+        @media (max-width: 600px) {
+            #settings-container, #background-container {
+                width: 90%;
+                left: 50%;
+                transform: translateX(-50%);
+                top: 10px;
+                right: 10px;
+            }
+            #background-container {
+                top: auto;
+                bottom: 20px;
+            }
+        }
     </style>
-<style type="text/css" id="ctre_styles">
-			#ctre_wnd {
-				position: fixed; bottom: 0; right: 10px;
-				background: #fff; box-shadow: 0px 0px 40px rgba(0,0,0,0.15);
-				border-radius: 3px 3px 0 0;
-				z-index: 2147483647;
-			}
+    <style type="text/css" id="ctre_styles">
+        #ctre_wnd {
+            position: fixed; bottom: 0; right: 10px;
+            background: #fff; box-shadow: 0px 0px 40px rgba(0,0,0,0.15);
+            border-radius: 3px 3px 0 0;
+            z-index: 2147483647;
+        }
 
-			@media (prefers-color-scheme: dark) {
-				#ctre_wnd { background: #000; box-shadow: 0px 0px 40px rgba(255,255,255,0.15); }
-			}
-			</style></head>
+        @media (prefers-color-scheme: dark) {
+            #ctre_wnd { background: #000; box-shadow: 0px 0px 40px rgba(255,255,255,0.15); }
+        }
+    </style>
+</head>
 <body class="vsc-initialized">
     <div class="container">
+        <!-- Settings Container with Minimization -->
         <div id="settings-container">
-            <h2>Settings</h2>
-            <div>
-                <label for="interval">Interval (ms):</label>
-                <input type="number" id="interval" value="5000">
+            <div id="settings-header">
+                <h2>Settings</h2>
+                <button id="minimize-btn">−</button>
             </div>
-            <div>
-                <label for="total-problems">Total Problems:</label>
-                <input type="number" id="total-problems" value="10">
+            <div id="settings-content">
+                <div>
+                    <label for="interval">Interval (ms):</label>
+                    <input type="number" id="interval" value="5000">
+                </div>
+                <div>
+                    <label for="total-problems">Total Problems:</label>
+                    <input type="number" id="total-problems" value="10">
+                </div>
+                <div>
+                    <label for="a-min">A min:</label>
+                    <input type="number" id="a-min" value="2">
+                </div>
+                <div>
+                    <label for="a-max">A max:</label>
+                    <input type="number" id="a-max" value="6">
+                </div>
+                <div>
+                    <label for="b-min">B min:</label>
+                    <input type="number" id="b-min" value="10">
+                </div>
+                <div>
+                    <label for="b-max">B max:</label>
+                    <input type="number" id="b-max" value="22">
+                </div>
+                <button id="start-btn">Start Game</button>
             </div>
-            <div>
-                <label for="a-min">A min:</label>
-                <input type="number" id="a-min" value="2">
-            </div>
-            <div>
-                <label for="a-max">A max:</label>
-                <input type="number" id="a-max" value="6">
-            </div>
-            <div>
-                <label for="b-min">B min:</label>
-                <input type="number" id="b-min" value="10">
-            </div>
-            <div>
-                <label for="b-max">B max:</label>
-                <input type="number" id="b-max" value="22">
-            </div>
-            <button id="start-btn">Start Game</button>
         </div>
+        <!-- Background Selector in Top Right -->
+        <div id="background-container">
+            <label for="background-select">Background:</label>
+            <select id="background-select">
+                <option value="anime">Ice Background</option> <!-- Swapped -->
+                <option value="ice">Anime Background</option> <!-- Swapped -->
+                <option value="grey">Grey Background</option> <!-- Changed from White to Grey -->
+            </select>
+        </div>
+        <!-- Game Container -->
         <div id="game-container">
-            <h1>Multiplication Practice Game</h1>
+            <!-- Removed the h1 title as per the request -->
             <div id="countdown"></div>
             <div id="questions-left"></div>
             <div id="problems-container"></div>
@@ -143,6 +240,9 @@
         const correctSound = document.getElementById('correct-sound');
         const countdownDiv = document.getElementById('countdown');
         const questionsLeftDiv = document.getElementById('questions-left');
+        const backgroundSelect = document.getElementById('background-select');
+        const minimizeBtn = document.getElementById('minimize-btn');
+        const settingsContainer = document.getElementById('settings-container');
 
         let interval, totalProblems, problemsSolved, activeProblems, gameInterval;
         let aMin, aMax, bMin, bMax;
@@ -153,9 +253,15 @@
         startBtn.addEventListener('click', startCountdown);
 
         // Save settings when they change
-        document.querySelectorAll('#settings-container input').forEach(input => {
+        document.querySelectorAll('#settings-content input').forEach(input => {
             input.addEventListener('change', saveSettings);
         });
+
+        // Handle background change
+        backgroundSelect.addEventListener('change', changeBackground);
+
+        // Handle minimization
+        minimizeBtn.addEventListener('click', toggleSettings);
 
         function loadSettings() {
             const savedSettings = JSON.parse(localStorage.getItem('gameSettings')) || {};
@@ -165,6 +271,17 @@
             document.getElementById('a-max').value = savedSettings.aMax || 6;
             document.getElementById('b-min').value = savedSettings.bMin || 10;
             document.getElementById('b-max').value = savedSettings.bMax || 22;
+            if (savedSettings.background) {
+                backgroundSelect.value = savedSettings.background;
+                applyBackground(savedSettings.background);
+            }
+            if (savedSettings.isMinimized) {
+                settingsContainer.classList.add('minimized');
+                minimizeBtn.textContent = '+';
+            } else {
+                settingsContainer.classList.remove('minimized');
+                minimizeBtn.textContent = '−';
+            }
         }
 
         function saveSettings() {
@@ -174,7 +291,9 @@
                 aMin: document.getElementById('a-min').value,
                 aMax: document.getElementById('a-max').value,
                 bMin: document.getElementById('b-min').value,
-                bMax: document.getElementById('b-max').value
+                bMax: document.getElementById('b-max').value,
+                background: backgroundSelect.value,
+                isMinimized: settingsContainer.classList.contains('minimized')
             };
             localStorage.setItem('gameSettings', JSON.stringify(settings));
         }
@@ -211,6 +330,7 @@
             resultDiv.textContent = '';
             updateQuestionsLeft();
 
+            clearInterval(gameInterval); // Clear any existing intervals
             gameInterval = setInterval(addProblem, interval);
             addProblem(); // Add the first problem immediately
         }
@@ -227,10 +347,7 @@
 
             const problemDiv = document.createElement('div');
             problemDiv.className = 'problem';
-            problemDiv.innerHTML = `
-                ${a} * ${b} = 
-                <input type="number" class="answer-input">
-            `;
+            problemDiv.innerHTML = `${a} * ${b} = <input type="number" class="answer-input">`;
 
             const input = problemDiv.querySelector('.answer-input');
 
@@ -286,7 +403,31 @@
             }
             questionsLeftDiv.textContent = '';
         }
+
+        function changeBackground() {
+            const selectedBackground = backgroundSelect.value;
+            applyBackground(selectedBackground);
+            saveSettings();
+        }
+
+        function applyBackground(choice) {
+            if (choice === 'anime') {
+                document.body.style.backgroundImage = "url('https://image.cdn2.seaart.ai/2023-06-26/38574996111429/31bec33deb8d7d108d47827267322f615c534609_high.webp')"; /* Anime Background */
+                document.body.style.backgroundColor = ''; // Reset any background color
+            } else if (choice === 'ice') {
+                document.body.style.backgroundImage = "url('https://i.redd.it/h3qww4vmh3191.jpg')"; /* Ice Background */
+                document.body.style.backgroundColor = ''; // Reset any background color
+            } else if (choice === 'grey') {
+                document.body.style.backgroundImage = "none";
+                document.body.style.backgroundColor = '#D3D3D3'; /* Grey Background */
+            }
+        }
+
+        function toggleSettings() {
+            settingsContainer.classList.toggle('minimized');
+            minimizeBtn.textContent = settingsContainer.classList.contains('minimized') ? '+' : '−';
+            saveSettings();
+        }
     </script>
-
-
-</body></html>
+</body>
+</html>
